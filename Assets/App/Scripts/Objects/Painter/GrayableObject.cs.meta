@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: df64a375ea53b5b478b7672194869e0d
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - positionMapper: {fileID: 2100000, guid: 12b29244be47d674193583a80a21951a, type: 2}
+  - extender: {fileID: 2100000, guid: 361d2fea131faff49be4d9463baf835a, type: 2}
+  - painter: {fileID: 2100000, guid: b11dd801cdc65f941aff1726667c9061, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
