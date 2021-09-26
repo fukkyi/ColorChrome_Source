@@ -3,18 +3,30 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// TODO: 試遊会用の仮クラス
+/// TODO: かなり簡易的に作ったクラス
 /// </summary>
 public class TalkCanvasManager : BaseSceneManager<TalkCanvasManager>
 {
     public bool isEnableScenario = false;
 
     [SerializeField]
-    private GameObject prologueScenario = null;
+    private GameObject findKeoScenario = null;
     [SerializeField]
-    private GameObject midwayScenario = null;
+    private GameObject findHyoukaScenario = null;
     [SerializeField]
-    private GameObject clearScenario = null;
+    private GameObject winHyoukaScenario = null;
+    [SerializeField]
+    private GameObject backKeoScenario = null;
+    [SerializeField]
+    private GameObject killEnemyScenario = null;
+    [SerializeField]
+    private GameObject backKeo2Scenario = null;
+    [SerializeField]
+    private GameObject happyEpilogueScenario = null;
+    [SerializeField]
+    private GameObject badEpilogueScenario = null;
+    [SerializeField]
+    private float playingBgmVolume = 0.3f;
 
     private void ShowScenario(GameObject scenarioObj)
     {
@@ -25,19 +37,44 @@ public class TalkCanvasManager : BaseSceneManager<TalkCanvasManager>
         StartCoroutine(WaitForScenario(generatedSceneraio));
     }
 
-    public void ShowPrologueScenario()
+    public void ShowFindKeoScenario()
     {
-        ShowScenario(prologueScenario);
+        ShowScenario(findKeoScenario);
     }
 
-    public void ShowMidwayScenario()
+    public void ShowFindHyoukaScenario()
     {
-        ShowScenario(midwayScenario);
+        ShowScenario(findHyoukaScenario);
     }
 
-    public void ShowClearScenario()
+    public void ShowWinHyoukaScenario()
     {
-        ShowScenario(clearScenario);
+        ShowScenario(winHyoukaScenario);
+    }
+
+    public void ShowBackKeoScenario()
+    {
+        ShowScenario(backKeoScenario);
+    }
+
+    public void ShowKillEnemyScenario()
+    {
+        ShowScenario(killEnemyScenario);
+    }
+
+    public void ShowBackKeo2Scenario()
+    {
+        ShowScenario(backKeo2Scenario);
+    }
+
+    public void ShowHappyEpilogueScenario()
+    {
+        ShowScenario(happyEpilogueScenario);
+    }
+
+    public void ShowBadEpilogueScenario()
+    {
+        ShowScenario(badEpilogueScenario);
     }
 
     /// <summary>
@@ -47,19 +84,19 @@ public class TalkCanvasManager : BaseSceneManager<TalkCanvasManager>
     /// <returns></returns>
     private IEnumerator WaitForScenario(GameObject scenarioObj)
     {
+        AudioManager.Instance.ChangeVolumeCurrentBGM(playingBgmVolume);
+
         isEnableScenario = true;
 
         Time.timeScale = 0;
 
         while(!scenarioObj.activeSelf)
         {
-            Debug.Log(scenarioObj.activeSelf);
             yield return null;
         }
 
         while(scenarioObj.activeSelf)
         {
-            Debug.Log(scenarioObj.activeSelf);
             yield return null;
         }
 
@@ -67,5 +104,7 @@ public class TalkCanvasManager : BaseSceneManager<TalkCanvasManager>
         Destroy(scenarioObj);
 
         isEnableScenario = false;
+
+        AudioManager.Instance.ChangeVolumeCurrentBGM(SoundObject.MaxVolume);
     }
 }

@@ -13,7 +13,7 @@ public class GrayableCalculator : MonoBehaviour
     private int currentGrayAmount = 0;
     private int currentInkValue = 0;
 
-    private float grayableRate = 0;
+    public float GrayableRate { get; private set; } = 0;
 
     // Start is called before the first frame update
     void Start()
@@ -41,7 +41,7 @@ public class GrayableCalculator : MonoBehaviour
         int diffGrayAmount = currentGrayAmount - beforeGrayAmount;
         int diffInkValue = currentInkValue - beforeInkValue;
 
-        grayableRate = (float)currentGrayAmount / totalGrayAmount;
+        GrayableRate = (float)currentGrayAmount / totalGrayAmount;
 
         // ƒCƒ“ƒN—Ê‚ð•Ï‰»‚³‚¹‚é
         GameSceneUIManager.Instance.InkGauge.AddInk(Mathf.Max(diffInkValue, 0));

@@ -23,7 +23,7 @@ public class ItemGauge : MonoBehaviour
     public int AttackLevel { get { return nowLevel[(int)ItemType.AttackUp]; } }
     public int HealingLevel { get { return nowLevel[(int)ItemType.HealingUp]; } }
     
-    private readonly int maxLavel = 5;
+    private const int MaxLavel = 5;
 
     [SerializeField] private Image[] gaugeImage = new Image[(int)ItemType.ItemTypeMax];
     [SerializeField] private Text[] levelText = new Text[(int)ItemType.ItemTypeMax];
@@ -34,7 +34,7 @@ public class ItemGauge : MonoBehaviour
     private float[] gaugeValue = new float[(int)ItemType.ItemTypeMax];
     private float[] maxGaugeValue = new float[(int)ItemType.ItemTypeMax];
     private float[] magnifications = new float[(int)ItemType.ItemTypeMax] { 1f, 1f, 1f };
-
+    private string[] levelCharacters = new string[MaxLavel] {"‡T", "‡U", "‡V", "‡W", "‡X"};
 
     
     #region Initialize
@@ -55,26 +55,48 @@ public class ItemGauge : MonoBehaviour
 
         for (int i = 0; i < levelText.Length; i++)
         {
-            levelText[i].text = nowLevel[i].ToString();
+            levelText[i].text = levelCharacters[nowLevel[i] - 1];
         }
     }
     #endregion
 
-
-    public void ItemGaugeUpdate(ItemType type, float value)
+    public float GetGaugeTotalValue(ItemType type)
     {
-        var t = (int)type;
-        if (nowLevel[t] == maxLavel) { return; }
-        gaugeValue[t] += value;
-        if (maxGaugeValue[t] <= gaugeValue[t]) { LevelUp(type); }
-        else { StartCoroutine(GaugeUpdate(type)); }
+        float value = 0;
+        float valueRate = 1.0f;
+
+        for(int i = 1; i < nowLevel[(int)type]; i++)
+        {
+            value += 100 * valueRate;
+            valueRate *= 1.5f;
+        }
+
+        value += gaugeValue[(int)type];
+
+        return value;
     }
 
-    private void LevelUp(ItemType type)
+    public void ItemGaugeUpdate(ItemType type, float value, bool playSound = true)
+    {
+        var t = (int)type;
+        if (nowLevel[t] == MaxLavel) { return; }
+        gaugeValue[t] += value;
+
+        if (maxGaugeValue[t] <= gaugeValue[t]) {
+            while (nowLevel[t] != MaxLavel && maxGaugeValue[t] <= gaugeValue[t]) {
+                LevelUp(type, playSound);
+            }
+        }
+        else {
+            StartCoroutine(GaugeUpdate(type));
+        }
+    }
+
+    private void LevelUp(ItemType type, bool playSound = true)
     {
         var t = (int)type;
         nowLevel[t]++;
-        if (nowLevel[t] != maxLavel)
+        if (nowLevel[t] != MaxLavel)
         {
             var n = gaugeValue[t] - maxGaugeValue[t];
             gaugeValue[t] = 0 + n;
@@ -82,7 +104,10 @@ public class ItemGauge : MonoBehaviour
             magnifications[t] *= magUp;
             StartCoroutine(LevelUpGaugeUpdate(type));
 
-            AudioManager.Instance.PlaySE("Powerup upgrade 17");
+            if (playSound)
+            {
+                AudioManager.Instance.PlaySE("Powerup upgrade 17");
+            }
         }
         else
         {
@@ -91,7 +116,7 @@ public class ItemGauge : MonoBehaviour
             StartCoroutine(LevelUpGaugeUpdate(type));
         }
 
-        levelText[t].text = nowLevel[t].ToString();
+        levelText[t].text = levelCharacters[nowLevel[t] - 1];
     }
 
     #region Gauge update process

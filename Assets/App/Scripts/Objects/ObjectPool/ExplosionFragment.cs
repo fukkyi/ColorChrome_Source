@@ -17,10 +17,11 @@ public class ExplosionFragment : PoolableObject
     /// </summary>
     /// <param name="position"></param>
     /// <param name="drawRadius"></param>
-    public void DrawOfPosition(Vector3 position, float drawRadius)
+    public void DrawOfPosition(Vector3 position, float drawRadius, bool unGray = false)
     {
         transform.position = position;
         drawObject.drawRadius = drawRadius;
+        drawObject.unGray = unGray;
 
         DrawOnce();
     }

@@ -6,6 +6,11 @@ using System;
 
 public class Enemy : Character, IReticleReactable
 {
+    /// <summary>
+    /// 地形の色を変える処理を有効化する距離
+    /// </summary>
+    protected static readonly float drawComponentEnableDistance = 50.0f;
+
     [SerializeField]
     protected EnemyUI enemyHpGauge = null;
     [SerializeField]
@@ -24,6 +29,8 @@ public class Enemy : Character, IReticleReactable
     [SerializeField]
     protected bool canFlinch = false;
     [SerializeField]
+    protected bool igroneObstacle = false;
+    [SerializeField]
     protected float detectRadius = 5.0f;
     [SerializeField, Range(0, 180)]
     protected float detectAngle = 80.0f;
@@ -33,6 +40,8 @@ public class Enemy : Character, IReticleReactable
     protected float cautionTime = 5.0f;
     [SerializeField]
     protected float flinchTime = 0.5f;
+    [SerializeField, Range(0, 1)]
+    protected float flinchRate = 1;
 
     protected Player detectPlayer = null;
     protected Rigidbody myRb = null;
@@ -52,6 +61,7 @@ public class Enemy : Character, IReticleReactable
     protected void Start()
     {
         myRb = GetComponent<Rigidbody>();
+        detectPlayer = Player.GetPlayer();
 
         SetHpToMax();
         ChangeEnemySearchStatus(EnemySearchStatus.undetected);
@@ -60,6 +70,7 @@ public class Enemy : Character, IReticleReactable
     // Update is called once per frame
     protected void Update()
     {
+        UpdateDrawComponent();
         UpdateSearchState();
         UpdateCautioning();
         UpdateFlinching();
@@ -78,6 +89,7 @@ public class Enemy : Character, IReticleReactable
     /// <param name="attackPower"></param>
     public override void TakeDamage(int attackPower)
     {
+        if (!this.enabled) return;
         if (isDead) return;
 
         base.TakeDamage(attackPower);
@@ -96,10 +108,17 @@ public class Enemy : Character, IReticleReactable
     {
         base.OnDead();
 
-        drawComponent.enabled = false;
+        if (drawComponent != null)
+        {
+            drawComponent.enabled = false;
+        }
+
+        SetLayerForBodyColliders(LayerMaskUtil.DeadEnemyLayerNumber);
         StartCoroutine(PlayDeadAnim());
 
-        enemyHpGauge.HideHp();
+        enemyHpGauge?.HideHp();
+
+        MissionManager.Instance.AddCountOfMission(MissionName.killEnemies, 1);
 
         onDeadEvent.Invoke();
     }
@@ -110,6 +129,8 @@ public class Enemy : Character, IReticleReactable
     /// <param name="raycastHit"></param>
     public void OnAimed(RaycastHit raycastHit)
     {
+        if (!this.enabled) return;
+
         SetActiveOutLine(true);
     }
 
@@ -119,6 +140,19 @@ public class Enemy : Character, IReticleReactable
     public void OnUnAimed()
     {
         SetActiveOutLine(false);
+    }
+
+    /// <summary>
+    /// 地形描画コンポーネントを更新する
+    /// </summary>
+    protected void UpdateDrawComponent()
+    {
+        bool enableDraw = TransformUtil.Calc2DDistance(detectPlayer.transform.position, transform.position) <= drawComponentEnableDistance;
+
+        if (drawComponent == null) return;
+        if (drawComponent.enabled == enableDraw) return;
+
+        drawComponent.enabled = enableDraw;
     }
 
     /// <summary>
@@ -149,6 +183,9 @@ public class Enemy : Character, IReticleReactable
     protected void UpdateFlinching()
     {
         currentFlinchTime = Mathf.Max(0, currentFlinchTime - TimeUtil.GetDeltaTime());
+
+        if (animator == null) return;
+
         animator.SetBool("Flinch", IsFlinching());
     }
 
@@ -278,7 +315,7 @@ public class Enemy : Character, IReticleReactable
     {
         Vector3 enemyPos = transform.position;
         // プレイヤーが検知する範囲内にいるか
-        int detectCount = Physics.OverlapSphereNonAlloc(enemyPos, detectRadius, searchBuffer, LayerMask.GetMask(LayerMaskUtil.PlayerLayerName));
+        int detectCount = Physics.OverlapSphereNonAlloc(enemyPos, detectRadius, searchBuffer, 1 << LayerMaskUtil.PlayerLayerNumber);
 
         if (detectCount <= 0) return false;
 
@@ -300,8 +337,12 @@ public class Enemy : Character, IReticleReactable
         float cunnretDetectAngle = IsCautioning() ? cautionDetectAngle : detectAngle;
         // プレイヤーが正面から見て検知する角度外なら検知しない
         if (Vector3.Angle(transform.forward, playerPosDiff) > cunnretDetectAngle) return false;
-        // プレイヤーと敵間に障害物がある場合は検知しない
-        if (Physics.Raycast(GetEyePos(), playerPosDiff, playerPosDiff.magnitude, LayerMaskUtil.GetLayerMaskGrounds())) return false;
+
+        if (!igroneObstacle)
+        {
+            // プレイヤーと敵間に障害物がある場合は検知しない
+            if (Physics.Raycast(GetEyePos(), playerPosDiff, playerPosDiff.magnitude, LayerMaskUtil.GetLayerMaskGrounds())) return false;
+        }
 
         detectPlayer = player;
 
@@ -324,8 +365,12 @@ public class Enemy : Character, IReticleReactable
         // プレイヤーがまだ範囲内にいるなら障害物の判定を行う
         Vector3 playerPos = detectPlayer.transform.position;
         Vector3 playerPosDiff = playerPos - enemyPos;
-        // プレイヤーと敵間に障害物がある場合は見失ったとする
-        if (Physics.Raycast(GetEyePos(), playerPosDiff, playerPosDiff.magnitude, LayerMaskUtil.GetLayerMaskGrounds())) return true;
+
+        if (!igroneObstacle)
+        {
+            // プレイヤーと敵間に障害物がある場合は見失ったとする
+            if (Physics.Raycast(GetEyePos(), playerPosDiff, playerPosDiff.magnitude, LayerMaskUtil.GetLayerMaskGrounds())) return true;
+        }
 
         return false;
     }
@@ -513,12 +558,16 @@ public class Enemy : Character, IReticleReactable
     /// <summary>
     /// ひるませる
     /// </summary>
-    public void SetFlinch()
+    /// <returns></returns>
+    public virtual bool SetFlinch()
     {
-        if (!canFlinch) return;
-        if (isDead) return;
+        if (!canFlinch) return false;
+        if (isDead) return false;
+        if (UnityEngine.Random.Range(0, 1.0f) > flinchRate) return false;
 
         currentFlinchTime = flinchTime;
+
+        return true;
     }
 
     protected enum EnemySearchStatus

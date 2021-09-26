@@ -6,6 +6,9 @@ using AmazingAssets.TerrainToMesh;
 public class TerrainMeshController : MonoBehaviour
 {
     [SerializeField]
+    private TerrainDetailPainter[] detailPainters = null;
+
+    [SerializeField]
     private string detailMeshName = "Detail Mesh";
 
     [SerializeField]
@@ -74,8 +77,20 @@ public class TerrainMeshController : MonoBehaviour
         }
     }
 
-    private void SetGrayableGrassToDetailMesh()
+    [ContextMenu("SetDetailPainters")]
+    private void SetDetailPainters()
     {
-        
+        detailPainters = GetComponentsInChildren<TerrainDetailPainter>();
+    }
+
+    /// <summary>
+    /// 灰色になるテラインのDetailを全てリセットする
+    /// </summary>
+    public void ResetGrayableDetail()
+    {
+        foreach(TerrainDetailPainter painter in detailPainters)
+        {
+            painter.ResetTerrainDetail();
+        }
     }
 }

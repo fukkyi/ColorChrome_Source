@@ -18,6 +18,8 @@ public class Player : Character
     private GameObject healEffect = null;
     [SerializeField]
     private DrawObject myDrawObject = null;
+    [SerializeField]
+    private MinMaxRange voicePitchRandRange = new MinMaxRange(-1.0f, 1.0f);
 
     /// <summary>
     /// 回避移動スピードのイージング
@@ -221,6 +223,19 @@ public class Player : Character
         playerRb = GetComponent<Rigidbody>();
         playerCollider = GetComponent<CapsuleCollider>();
         afterImageGenerator = GetComponent<AfterImageGenerator>();
+        // チェックポイントがある場合は、チェックポイントの状態に合わせる
+        if (GamePlayDataManager.currentCheckPoint != null)
+        {
+            CheckPoint checkPoint = GamePlayDataManager.currentCheckPoint;
+            transform.parent.position = checkPoint.playerPos;
+            transform.parent.rotation = checkPoint.playerRot;
+
+            GameSceneUIManager.Instance.ItemGauge.ItemGaugeUpdate(ItemType.AttackUp, checkPoint.colorAttackValue, false);
+            GameSceneUIManager.Instance.ItemGauge.ItemGaugeUpdate(ItemType.HealingUp, checkPoint.colorHealingValue, false);
+            GameSceneUIManager.Instance.ItemGauge.ItemGaugeUpdate(ItemType.RangeUp, checkPoint.colorRangeValue, false);
+
+            GameSceneUIManager.Instance.InkGauge.AddMaxInk();
+        }
 
         SetHpToMax();
     }
@@ -234,6 +249,15 @@ public class Player : Character
         UpdatePlayerMove();
         UpdatePlayerAnim();
         UpdateDrawRange();
+    }
+
+    /// <summary>
+    /// プレイヤーのコンポーネントを取得する
+    /// </summary>
+    /// <returns></returns>
+    public static Player GetPlayer()
+    {
+        return GameObject.FindWithTag(TagUtil.PlayerTagName).GetComponent<Player>();
     }
 
     public void OnMove(InputAction.CallbackContext context)
@@ -275,7 +299,7 @@ public class Player : Character
 
         if (!IsControlable() || isAttacking()) return;
 
-        ChangeAnimManage(context.performed);
+        ChangeAimManage(context.performed);
     }
 
     public void OnAvoid(InputAction.CallbackContext context)
@@ -317,7 +341,7 @@ public class Player : Character
         }
 
         // スピードの制限を設定する
-        if (inputMoveVec.magnitude > 0 && IsControlable() && !isAttacking())
+        if (inputMoveVec.magnitude > 0 && CanInputMove())
         {
             if (isAiming)
             {
@@ -366,8 +390,8 @@ public class Player : Character
             transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(direction), rotateSpeed * TimeUtil.GetDeltaTime());
         }
 
-        // 入力がない場合は回転処理や加速をさせない
-        if (inputMoveVec.magnitude == 0 || !IsControlable() || isAttacking())
+        // 入力がない場合、移動できない状態の場合は回転処理や加速をさせない
+        if (inputMoveVec.magnitude == 0 || !CanInputMove())
         {
             SetMoveVelocity(currentMoveVec * currentMoveSpeed);
             return;
@@ -425,8 +449,6 @@ public class Player : Character
     {
         if (isAiming) return;
 
-        //if (isAttacking) return;
-
         if (meleeAttackingCount == (int)PlayerMeleeAttackState.NotPlaying)
         {
             PlayNextMeleeAttack();
@@ -435,9 +457,6 @@ public class Player : Character
         {
             isEnableNextMeleeAttack = true;
         }
-
-        //animator.SetTrigger("MeleeAttack");
-        //StartCoroutine(WatchAttackAnimState("MeleeAttack"));
     }
 
     /// <summary>
@@ -454,7 +473,7 @@ public class Player : Character
             meleeAttackingCount = (int)PlayerMeleeAttackState.Melee1Playing;
             meleeAttackCollider.damageValue = meleeAttack1Power;
 
-            AudioManager.Instance.PlayRandomPitchSE("ere_light_attack");
+            PlayRandPitchVoice("ere_light_attack");
         }
         else if (meleeAttackingCount == (int)PlayerMeleeAttackState.Melee1Playing)
         {
@@ -462,7 +481,7 @@ public class Player : Character
             meleeAttackingCount = (int)PlayerMeleeAttackState.Melee2Playing;
             meleeAttackCollider.damageValue = meleeAttack2Power;
 
-            AudioManager.Instance.PlayRandomPitchSE("ere_light_attack");
+            PlayRandPitchVoice("ere_light_attack");
         }
         else if (meleeAttackingCount == (int)PlayerMeleeAttackState.Melee2Playing)
         {
@@ -470,7 +489,7 @@ public class Player : Character
             meleeAttackingCount = (int)PlayerMeleeAttackState.Melee3Playing;
             meleeAttackCollider.damageValue = meleeAttack3Power;
 
-            AudioManager.Instance.PlayRandomPitchSE("ere_heavy_attack");
+            PlayRandPitchVoice("ere_heavy_attack");
         }
 
         isEnableNextMeleeAttack = false;
@@ -505,7 +524,7 @@ public class Player : Character
         animator.SetTrigger("MagicAttack");
         GameSceneUIManager.Instance.InkGauge.AddInk(-magicInkCost);
 
-        AudioManager.Instance.PlayRandomPitchSE("ere_light_attack");
+        PlayRandPitchVoice("ere_light_attack");
 
         isMagicAttacking = true;
     }
@@ -584,7 +603,7 @@ public class Player : Character
     /// エイム状態を切り替える
     /// </summary>
     /// <param name="isAiming"></param>
-    private void ChangeAnimManage(bool isAiming)
+    private void ChangeAimManage(bool isAiming)
     {
         if (this.isAiming == isAiming) return;
 
@@ -686,11 +705,11 @@ public class Player : Character
 
         animator.SetTrigger("Damage");
         // エイム状態は解除する
-        ChangeAnimManage(false);
+        ChangeAimManage(false);
         ResetMeleeAttacking();
         OnAttackColliderDisable();
 
-        AudioManager.Instance.PlayRandomPitchSE("ere_damage");
+        PlayRandPitchVoice("ere_damage");
 
         isMagicAttacking = false;
     }
@@ -760,7 +779,7 @@ public class Player : Character
     /// </summary>
     private bool IsControlable()
     {
-        return !isDead && !isPlayingUnableToMoveAnim && !GameSceneManager.Instance.isGamePausing();
+        return !isDead && !isPlayingUnableToMoveAnim && !GameSceneManager.Instance.isGamePausing() && !TalkCanvasManager.Instance.isEnableScenario;
     }
 
     private bool isAttacking()
@@ -769,11 +788,40 @@ public class Player : Character
     }
 
     /// <summary>
+    /// 移動ができるベクトルか
+    /// </summary>
+    /// <returns></returns>
+    private bool CanMoveVec()
+    {
+        return true;
+
+        RaycastHit raycastHit;
+        float rayRadius = playerCollider.radius;
+        float rayDistance = CalcDistanceForFoot();
+        // SphereCastを発射し、地面に当たった場合は接地中と判定する
+        Physics.SphereCast(GetCenterPos(), rayRadius, Vector3.down, out raycastHit, rayDistance, LayerMaskUtil.GetLayerMaskGrounds());
+
+        Debug.Log(raycastHit.normal);
+
+        return raycastHit.normal.y > 0.3f;
+    }
+
+    /// <summary>
+    /// 移動できる状態か
+    /// </summary>
+    /// <returns></returns>
+    private bool CanInputMove()
+    {
+        return IsControlable() && !isAttacking() && CanMoveVec();
+    }
+
+    /// <summary>
     /// 近接攻撃の状態をリセットする
     /// </summary>
     private void ResetMeleeAttacking()
     {
         isMeleeAttacking = false;
+        canAttackingRotate = false;
         meleeAttackingCount = (int)PlayerMeleeAttackState.NotPlaying;
     }
 
@@ -823,6 +871,17 @@ public class Player : Character
     }
 
     /// <summary>
+    /// ランダムなピッチでボイスを鳴らす
+    /// </summary>
+    /// <param name="voiceName"></param>
+    private void PlayRandPitchVoice(string voiceName)
+    {
+        float volume = 1.0f;
+        float pitch = 1.0f;
+        AudioManager.Instance.PlayRandomPitchSE(voiceName, GetCenterPos(), volume, pitch, voicePitchRandRange.min, voicePitchRandRange.max);
+    }
+
+    /// <summary>
     /// 近接攻撃判定を有効にする (アニメーションイベント用)
     /// </summary>
     private void OnAttackColliderEneble()
@@ -844,6 +903,8 @@ public class Player : Character
     private void OnStartUnableToMoveAnim()
     {
         isPlayingUnableToMoveAnim = true;
+        OnFinishMeleeAttack();
+        OnFinishMagicAttack();
     }
 
     /// <summary>
@@ -895,7 +956,10 @@ public class Player : Character
     private void OnFinishMagicAttack()
     {
         isMagicAttacking = false;
-        ChangeAnimManage(isActivateAimBind);
+        // 既にエイムを解除しているなら、エイム状態を変更しない
+        if (!isAiming) return;
+
+        ChangeAimManage(isActivateAimBind);
     }
 
     /// <summary>

@@ -152,8 +152,17 @@ public class PlayerCamera : MonoBehaviour
     /// </summary>
     public void RotateCamera()
     {
-        float rotateAngleX = inputRotateVec.y * rotateSpeed.y * Time.deltaTime;
-        float rotateAngleY = inputRotateVec.x * rotateSpeed.x * Time.deltaTime;
+        float rotateAngleX = inputRotateVec.y * rotateSpeed.y * OptionValues.cameraSpeed * Time.deltaTime;
+        float rotateAngleY = inputRotateVec.x * rotateSpeed.x * OptionValues.cameraSpeed * Time.deltaTime;
+
+        if (OptionValues.xAxisLeftAndRightReversals)
+        {
+            rotateAngleX = -rotateAngleX;
+        }
+        if (OptionValues.yAxisUpsideDown)
+        {
+            rotateAngleY = -rotateAngleY;
+        }
 
         Vector3 cameraAngles = cameraParentTrans.localEulerAngles;
         cameraAngles.x += rotateAngleX;

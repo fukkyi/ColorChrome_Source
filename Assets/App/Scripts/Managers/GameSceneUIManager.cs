@@ -31,4 +31,8 @@ public class GameSceneUIManager : BaseSceneManager<GameSceneUIManager>
     [SerializeField]
     private ItemGauge itemGauge = null;
     public ItemGauge ItemGauge { get { return itemGauge; } }
+
+    [SerializeField]
+    private DestinationUI destinationIcon = null;
+    public DestinationUI DestinationIcon { get { return destinationIcon; } }
 }

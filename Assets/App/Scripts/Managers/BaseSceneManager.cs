@@ -6,7 +6,7 @@ public abstract class BaseSceneManager<Type> : MonoBehaviour where Type : BaseSc
 {
     public static Type Instance { get; private set; } = null;
 
-    private void Awake()
+    protected void Awake()
     {
         if (Instance == null)
         {

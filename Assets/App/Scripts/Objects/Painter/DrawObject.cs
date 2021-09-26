@@ -10,6 +10,7 @@ public class DrawObject : MonoBehaviour
 
     // –ˆƒtƒŒ[ƒ€‚Ì•`‰æ‚ğ‹–‰Â‚·‚é‚©
     public bool allowUpdateDraw = true;
+    public bool unGray = false;
     // “®‚¢‚Ä‚¢‚È‚¢‚Å‚à•`‰æ‚ğÀs‚·‚é‚©
     public bool allowNoMoveDraw = false;
     public float drawRadius = 1;
@@ -17,8 +18,6 @@ public class DrawObject : MonoBehaviour
 
     [SerializeField]
     private int detectCount = 10;
-    [SerializeField]
-    private bool unGray = false;
 
     private int grayableObjectLayerMask = 0;
 

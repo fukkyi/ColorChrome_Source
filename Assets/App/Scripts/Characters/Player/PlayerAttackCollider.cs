@@ -26,5 +26,7 @@ public class PlayerAttackCollider : AttackCollider
         damagedObjectList.Add(enemyComponent.gameObject);
 
         GameSceneUIManager.Instance.InkGauge.AddInk(addInkValue);
+
+        AudioManager.Instance.PlayRandomPitchSE("Staff Hitting (Flesh) 1", transform.position);
     }
 }

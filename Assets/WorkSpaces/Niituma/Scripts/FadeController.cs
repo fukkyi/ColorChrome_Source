@@ -9,6 +9,8 @@ public class FadeController : MonoBehaviour
     public static FadeController Instance { get { return _instance; } }
     static FadeController _instance;
 
+    public GameObject ProgressBarObj = null;
+    public Image ProgressBarImage = null;
     public Material GetFadeMat { get { return mat; } }
 
     public bool startFadeIn = false;

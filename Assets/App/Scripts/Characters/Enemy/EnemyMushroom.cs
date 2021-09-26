@@ -11,8 +11,6 @@ public class EnemyMushroom : AgentEnemy
     [SerializeField]
     private float chaseWalkAnimSpeed = 2.0f;
 
-    protected string meleeAttack2AnimName = "Attack_2";
-
     protected new void Update()
     {
         base.Update();
@@ -25,8 +23,6 @@ public class EnemyMushroom : AgentEnemy
     protected override void OnDead()
     {
         base.OnDead();
-
-        MissionManager.Instance.AddCountOfMission(MissionName.MushEnemyKill, 1);
     }
 
     /// <summary>
@@ -46,15 +42,10 @@ public class EnemyMushroom : AgentEnemy
     {
         base.ActionForDetected();
 
-        if (!isRangeAttacking)
+        if (!isPlayingUnableToMoveAnim)
         {
             // 遠距離攻撃中でない場合はプレイヤーを追う
             agent.SetDestination(detectPlayer.transform.position);
-        }
-        else
-        {
-            // 遠距離攻撃中は追従は止めるため、目標点を自分の座標にする
-            agent.SetDestination(transform.position);
         }
 
         float playerDistance = Vector3.Distance(transform.position, detectPlayer.transform.position);

@@ -65,6 +65,10 @@ public class GameOverUI : MonoBehaviour
     {
         menuContents.SetActive(false);
         SceneTransitionManager.Instance.StartTransitionForReset();
+
+        GamePlayDataManager.continueCount++;
+
+        AudioManager.Instance.StopCurrentBGMWithFade();
     }
 
     /// <summary>
@@ -74,5 +78,7 @@ public class GameOverUI : MonoBehaviour
     {
         menuContents.SetActive(false);
         GameSceneManager.Instance.BackTitle();
+
+        AudioManager.Instance.StopCurrentBGMWithFade();
     }
 }

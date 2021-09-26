@@ -10,13 +10,10 @@ public class BossHPGauge : HpGauge
     [SerializeField]
     private Enemy targetEnemy = null;
 
-    private string bossName = "ボスキノコ";
-
     private void Update()
     {
         if (targetEnemy == null || !gameObject.activeSelf) return;
 
-        Debug.Log(targetEnemy.GetCurrentHp());
         SetFillAmountByHp(targetEnemy.GetMaxHp(), targetEnemy.GetCurrentHp());
 
         if (targetEnemy.GetCurrentHp() <= 0)
@@ -25,9 +22,14 @@ public class BossHPGauge : HpGauge
         }
     }
 
+    public void SetGaugeDetail(Enemy enemy, string name)
+    {
+        targetEnemy = enemy;
+        bossNameText.text = name;
+    }
+
     public void ShowGauge()
     {
-        bossNameText.text = bossName;
         gameObject.SetActive(true);
     }
 

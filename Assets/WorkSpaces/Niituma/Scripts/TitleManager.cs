@@ -65,6 +65,8 @@ public class TitleManager : MonoBehaviour
             if (_grayValue == 1 && !isTransitioning)
             {
                 isTransitioning = true;
+                // プレイデータをリセットする
+                GamePlayDataManager.ResetPlayData();
 
                 AudioManager.Instance.StopCurrentBGMWithFade(bgmFadeOutTime);
                 SceneTransitionManager.Instance.StartTransitionByName(SceneTransitionManager.OpeningSceneName);

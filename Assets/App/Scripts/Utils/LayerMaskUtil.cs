@@ -48,6 +48,11 @@ public class LayerMaskUtil
     /// </summary>
     public static readonly int TerrainLayerNumber = 17;
     public static readonly string TerrainLayerName = "Terrain";
+    /// <summary>
+    /// €–S‚µ‚½“G‚ÌƒŒƒCƒ„[
+    /// </summary>
+    public static readonly int DeadEnemyLayerNumber = 18;
+    public static readonly string DeadEnemyLayerName = "DeadEnemy";
 
     private static readonly string[] GroundLayers = { "Default", GrayableLayerName };
 

@@ -15,6 +15,8 @@ public class MissionManager : BaseManager<MissionManager>
     public void AddMission(Mission mission)
     {
         currentMissionList.Add(mission);
+        mission.OnAdded();
+
         GameSceneUIManager.Instance.MissionList.UpdateMissionList();
     }
 
@@ -22,7 +24,7 @@ public class MissionManager : BaseManager<MissionManager>
     /// ミッションを完了させる
     /// </summary>
     /// <param name="name"></param>
-    public void ComplateMission(MissionName name)
+    public void ComplateMission(MissionName name, bool playSound = true)
     {
         Mission mission = GetMissionByName(name);
 
@@ -34,7 +36,10 @@ public class MissionManager : BaseManager<MissionManager>
         GameSceneUIManager.Instance.MissionList.UpdateMissionList();
         StartCoroutine(GameSceneUIManager.Instance.MissionList.PlayClearAnim(name));
 
-        AudioManager.Instance.PlaySE("Win sound 16");
+        if (playSound)
+        {
+            AudioManager.Instance.PlaySE("Win sound 16");
+        }
     }
 
     /// <summary>
@@ -113,14 +118,28 @@ public class MissionManager : BaseManager<MissionManager>
     }
 }
 
+/*
+public enum TrialMissionName
+{
+    MushEnemyKill,
+    GotoMushVillage,
+    KillMushBoss,
+}
+*/
+
 /// <summary>
 /// ミッションの名前
 /// </summary>
 public enum MissionName
 {
-    MushEnemyKill,
-    GotoMushVillage,
-    KillMushBoss,
+    ExitValley,
+    FindKeoPrison,
+    FindHyou,
+    KillHyou,
+    BackKeoPrison,
+    killEnemies,
+    BackKeoPrison2,
+    KillRose
 }
 
 [Serializable]
@@ -135,12 +154,20 @@ public class Mission
     /// <summary>
     /// ミッション達成させる
     /// </summary>
-    public void Complete()
+    public virtual void Complete()
     {
         if (complete) return;
 
         complete = true;
         onCompleted.Invoke();
+    }
+
+    /// <summary>
+    /// ミッションが追加された時の処理
+    /// </summary>
+    public virtual void OnAdded()
+    {
+
     }
 }
 
@@ -158,5 +185,33 @@ public class CountableMission : Mission
     public void AddCount(int count)
     {
         currentCount += count;
+    }
+}
+
+[Serializable]
+public class TowardMission : Mission
+{
+    public MissionTargetArea targetArea;
+
+    public override void OnAdded()
+    {
+        base.OnAdded();
+        // 目的地アイコンの追従目標にする
+        GameSceneUIManager.Instance.DestinationIcon.SetDestination(targetArea.transform);
+        // 目的地に着いた時にミッションクリアにさせる
+        targetArea.AddReachedAction(() => { MissionManager.Instance.ComplateMission(missionName); });
+        // 目的地アイコンを有効化する
+        targetArea.gameObject.SetActive(true);
+    }
+
+    public override void Complete()
+    {
+        if (complete) return;
+        // クリア時に目的地アイコンを無効化させる
+        targetArea.gameObject.SetActive(false);
+        GameSceneUIManager.Instance.DestinationIcon.UnSetDestination();
+
+        complete = true;
+        onCompleted.Invoke();
     }
 }

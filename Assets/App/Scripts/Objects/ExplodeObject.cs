@@ -15,6 +15,8 @@ public class ExplodeObject : MonoBehaviour
     private int explodeCount = 5;
     [SerializeField]
     private float explodeInterval = 0.05f;
+    [SerializeField]
+    private bool unGray = false;
 
     /// <summary>
     /// 爆発を起こす
@@ -34,12 +36,12 @@ public class ExplodeObject : MonoBehaviour
             // 1発だけは爆発地点中心に生成し、爆発範囲近くは確実に色が塗られるようにする
             if (i == fragmentCount)
             {
-                fragment.DrawOfPosition(explodeOrigin, explodeSize.min);
+                fragment.DrawOfPosition(explodeOrigin, explodeSize.min, unGray);
             }
             else
             {
                 Vector3 fragmentPos = explodeOrigin + Random.onUnitSphere * explodeSize.RandOfRange();
-                fragment.DrawOfPosition(fragmentPos, fragmentSize.RandOfRange());
+                fragment.DrawOfPosition(fragmentPos, fragmentSize.RandOfRange(), unGray);
             }
         }
     }

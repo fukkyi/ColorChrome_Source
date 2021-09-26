@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
 using System;
 
 [RequireComponent(typeof(AudioSource))]
@@ -132,6 +133,17 @@ public class SoundObject : PoolableObject
     }
 
     /// <summary>
+    /// ボリュームを変える
+    /// </summary>
+    /// <param name="fadeTime"></param>
+    /// <param name="volume"></param>
+    /// <returns></returns>
+    public IEnumerator ChangeVolume(float fadeTime, float volume)
+    {
+        yield return StartCoroutine(FadeVolume(audioSource.volume, volume, fadeTime));
+    }
+
+    /// <summary>
     /// 音量をフェードさせる
     /// </summary>
     /// <param name="beforeValue"></param>
@@ -146,7 +158,7 @@ public class SoundObject : PoolableObject
         while(currentFadeTime <= fadeTime)
         {
             audioSource.volume = Mathf.Lerp(beforeValue, afterValue, currentFadeTime / fadeTime);
-            currentFadeTime += Time.deltaTime;
+            currentFadeTime += TimeUtil.GetDeltaTime(true);
 
             yield return null;
         }
@@ -154,5 +166,14 @@ public class SoundObject : PoolableObject
         audioSource.volume = afterValue;
 
         onFinish?.Invoke();
+    }
+
+    /// <summary>
+    /// ミキサーグループを設定する
+    /// </summary>
+    /// <param name="mixerGroup"></param>
+    public void SetMixer(AudioMixerGroup mixerGroup)
+    {
+        audioSource.outputAudioMixerGroup = mixerGroup;
     }
 }

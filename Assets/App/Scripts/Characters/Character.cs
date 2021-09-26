@@ -9,6 +9,8 @@ public class Character : MonoBehaviour
     [SerializeField]
     protected Renderer[] myRenderers = null;
     [SerializeField]
+    protected Collider[] myBodyColliders = null;
+    [SerializeField]
     protected int maxHp = 100;
 
     protected bool isDead = false;
@@ -72,5 +74,17 @@ public class Character : MonoBehaviour
     public int GetCurrentHp()
     {
         return currentHp;
+    }
+
+    /// <summary>
+    /// 身体用のコライダーが付いたゲームオブジェクトのレイヤーを変更する
+    /// </summary>
+    /// <param name="layerNumber"></param>
+    public void SetLayerForBodyColliders(int layerNumber)
+    {
+        foreach(Collider collider in myBodyColliders)
+        {
+            collider.gameObject.layer = layerNumber;
+        }
     }
 }

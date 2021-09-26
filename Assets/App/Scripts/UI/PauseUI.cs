@@ -6,6 +6,8 @@ using UnityEngine.EventSystems;
 [RequireComponent(typeof(FadeableUI))]
 public class PauseUI : MonoBehaviour
 {
+    public bool isShowingOption = false;
+
     [SerializeField]
     private GameObject pauseTopContent = null;
     [SerializeField]
@@ -32,10 +34,24 @@ public class PauseUI : MonoBehaviour
         fadeable.FadeIn();
     }
 
+    public void ShowOptionUI()
+    {
+        isShowingOption = true;
+
+        OptionValuesSetter.LoadOptionScene(() => {
+            pauseTopContent.SetActive(true);
+            EventSystem.current.SetSelectedGameObject(pauseTopFirstSelectObj);
+            isShowingOption = false;
+        });
+        pauseTopContent.SetActive(false);
+    }
+
     public void HidePauseUI()
     {
+        OptionValuesSetter.UnLoadOptionScene();
         fadeable.FadeOut(onFinish: () => {
             HideBackTitleContent();
+            EventSystem.current.SetSelectedGameObject(null);
             gameObject.SetActive(false);
         });
     }

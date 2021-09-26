@@ -3,7 +3,9 @@ guid: 2348f16e6e19e284a81748a458c1baf6
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - bgmMixerGroup: {fileID: 6425101301727072316, guid: c124fadc0de43dc4386bd155f6e3bed9, type: 2}
+  - seMixerGroup: {fileID: 6421905543828955145, guid: c124fadc0de43dc4386bd155f6e3bed9, type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

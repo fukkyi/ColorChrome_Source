@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.SceneManagement;
 
 public class TerrainDetailPainter : MonoBehaviour
 {
@@ -21,10 +22,10 @@ public class TerrainDetailPainter : MonoBehaviour
         originalDefaultDetailMap = terrainData.GetDetailLayer(0, 0, terrainData.detailWidth, terrainData.detailHeight, defaultGrassLayer);
         originalGrayDetailMap = terrainData.GetDetailLayer(0, 0, terrainData.detailWidth, terrainData.detailHeight, grayGrassLayer);
 
-        #if UNITY_EDITOR
+#if UNITY_EDITOR
         // Detailデータは巻き戻らないため、プレイ終了時にプログラムで巻き戻す
         EditorApplication.playModeStateChanged += OnEditorStoped;
-        #endif
+#endif
     }
 
 #if UNITY_EDITOR
@@ -35,11 +36,14 @@ public class TerrainDetailPainter : MonoBehaviour
     private void OnEditorStoped(PlayModeStateChange state)
     {
         if (state != PlayModeStateChange.ExitingPlayMode) return;
+    }
+#endif
 
+    public void ResetTerrainDetail()
+    {
         terrain.terrainData.SetDetailLayer(0, 0, defaultGrassLayer, originalDefaultDetailMap);
         terrain.terrainData.SetDetailLayer(0, 0, grayGrassLayer, originalGrayDetailMap);
     }
-#endif
 
     /// <summary>
     /// Detailレイヤーを切り替えて草の色を変える
@@ -69,23 +73,29 @@ public class TerrainDetailPainter : MonoBehaviour
         int detailMaxYPos = (int)(terrain.terrainData.detailHeight * maxPosRatio.y);
         int detailWidth = detailMaxXPos - detailMinXPos;
         int detailHeight = detailMaxYPos - detailMinYPos;
+
+        // TODO minPosRatioとmaxPosRatioが同じ時に落ちる？
+        if (minPosRatio.x == maxPosRatio.x) return;
+        if (minPosRatio.y == maxPosRatio.y) return;
+
         // もしDetailMapの範囲外まで指定されそうであれば、範囲内までクランプする
         if (detailMinXPos + detailWidth > terrain.terrainData.detailWidth)
         {
             detailWidth -= (detailMinXPos + detailWidth) - terrain.terrainData.detailWidth;
+            detailWidth = Mathf.Max(detailWidth, 0);
         }
-        if (detailMinXPos + detailWidth > terrain.terrainData.detailWidth)
+        if (detailMinYPos + detailHeight > terrain.terrainData.detailHeight)
         {
-            detailWidth -= (detailMinXPos + detailWidth) - terrain.terrainData.detailWidth;
+            detailHeight -= (detailMinYPos + detailHeight) - terrain.terrainData.detailHeight;
+            detailHeight = Mathf.Max(detailHeight, 0);
         }
 
-        // なぜかDetailMapの1次元にY,2次元にX,が入っているので、引数のwidthとheightを逆にすることで対処
-        int[,] grassDetailMap = terrain.terrainData.GetDetailLayer(detailMinXPos, detailMinYPos, detailHeight, detailWidth, defaultGrassLayer);
-        int[,] grayDetailMap = terrain.terrainData.GetDetailLayer(detailMinXPos, detailMinYPos, detailHeight, detailWidth, grayGrassLayer);
+        int[,] grassDetailMap = terrain.terrainData.GetDetailLayer(detailMinXPos, detailMinYPos, detailWidth, detailHeight, defaultGrassLayer);
+        int[,] grayDetailMap = terrain.terrainData.GetDetailLayer(detailMinXPos, detailMinYPos, detailWidth, detailHeight, grayGrassLayer);
         // 多次元配列なのでGetLength()で要素数を取得する
-        for (int y = 0; y < grassDetailMap.GetLength(1); y++)
+        for (int x = 0; x < grassDetailMap.GetLength(0); x++)
         {
-            for (int x = 0; x < grassDetailMap.GetLength(0); x++)
+            for (int y = 0; y < grassDetailMap.GetLength(1); y++)
             {
                 if (unGray)
                 {
@@ -116,6 +126,20 @@ public class TerrainDetailPainter : MonoBehaviour
                 }
             }
         }
+
+        /*
+        int paintEndPosX = detailMinXPos + grassDetailMap.GetLength(0);
+        int paintEndPosY = detailMinYPos + grassDetailMap.GetLength(1);
+        // 有効範囲外が塗られるとクラッシュするため、有効範囲外が含まれないようにする
+        if (paintEndPosX >= terrain.terrainData.detailWidth)
+        {
+            detailMinXPos -= paintEndPosX - terrain.terrainData.detailWidth;
+        }
+        if (paintEndPosY >= terrain.terrainData.detailHeight)
+        {
+            detailMinYPos -= paintEndPosY - terrain.terrainData.detailHeight;
+        }
+        */
 
         terrain.terrainData.SetDetailLayer(detailMinXPos, detailMinYPos, grayGrassLayer, grayDetailMap);
         terrain.terrainData.SetDetailLayer(detailMinXPos, detailMinYPos, defaultGrassLayer, grassDetailMap);

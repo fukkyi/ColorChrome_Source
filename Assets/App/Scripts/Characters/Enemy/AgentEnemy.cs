@@ -31,8 +31,8 @@ public class AgentEnemy : Enemy
     [SerializeField]
     protected MinMaxRange rangedAttackInterval = new MinMaxRange(0, 60.0f);
 
-    protected bool isRangeAttacking = false;
     protected bool isArrivalStroll = false;
+    protected bool isPlayingUnableToMoveAnim = false;
     protected float strollWaitTime = 0;
     protected float rangedAttackWaitTime = 0;
     protected string meleeAttackAnimName = "Attack_1";
@@ -56,6 +56,11 @@ public class AgentEnemy : Enemy
     protected new void Update()
     {
         base.Update();
+        // 行動不可になるアニメーションが再生中の場合は追従地点を自分にする
+        if (!isDead && isPlayingUnableToMoveAnim)
+        {
+            agent.SetDestination(transform.position);
+        }
     }
 
     protected void OnDrawGizmos()
@@ -111,7 +116,7 @@ public class AgentEnemy : Enemy
         agent.speed = chaseMoveSpeed;
         agent.stoppingDistance = chaseStopDistance;
         // 遠距離攻撃中は追従目標を設定しない
-        if (isRangeAttacking) return;
+        if (isPlayingUnableToMoveAnim) return;
 
         agent.SetDestination(detectPlayer.transform.position);
     }
@@ -153,6 +158,7 @@ public class AgentEnemy : Enemy
 
         agent.SetDestination(transform.position);
         OnAttackColliderDisable();
+        OnFinishUnableToMoveAnim();
     }
 
     /// <summary>
@@ -168,9 +174,7 @@ public class AgentEnemy : Enemy
     /// </summary>
     protected virtual void RangedAttack()
     {
-        AttackToForward(rangedAttackAnimName,
-            onStartAttackAction: () => { isRangeAttacking = true; },
-            onFinishAttackAction: () => { isRangeAttacking = false; });
+        AttackToForward(rangedAttackAnimName);
     }
 
     /// <summary>
@@ -226,7 +230,7 @@ public class AgentEnemy : Enemy
             return;
         }
         // 遠距離攻撃中の場合は目標点を設定しない
-        if (isRangeAttacking) return;
+        if (isPlayingUnableToMoveAnim) return;
         // 待機時間が終了したら新たな目標点を設定する
         Vector3 strollPos = TransformUtil.GetRandPosByBox(strollCenter, strollSize);
         agent.SetDestination(strollPos);
@@ -235,10 +239,25 @@ public class AgentEnemy : Enemy
     }
 
     /// <summary>
+    /// ひるませる
+    /// </summary>
+    /// <returns></returns>
+    public override bool SetFlinch()
+    {
+        if (!base.SetFlinch()) return false;
+
+        OnAttackColliderDisable();
+
+        return true;
+    }
+
+    /// <summary>
     /// AnimationEventから受け取ったタイミングで攻撃判定を有効にする
     /// </summary>
     protected void OnAttackColliderEneble()
     {
+        if (IsFlinching()) return;
+
         meleeAttackCollider.EnableCollider();
     }
 
@@ -256,5 +275,21 @@ public class AgentEnemy : Enemy
         rangedAttackShooter.ShotToPosition(magicBullet, detectPlayer.GetCenterPos());
 
         AudioManager.Instance.PlaySE("Bio gun Shot 10", rangedAttackShooter.transform.position);
+    }
+
+    /// <summary>
+    /// 行動不能になるアニメーションが再生された際のイベント (アニメーションイベント用)
+    /// </summary>
+    private void OnStartUnableToMoveAnim()
+    {
+        isPlayingUnableToMoveAnim = true;
+    }
+
+    /// <summary>
+    /// 行動不能になるアニメーションが終了した際のイベント (アニメーションイベント用)
+    /// </summary>
+    private void OnFinishUnableToMoveAnim()
+    {
+        isPlayingUnableToMoveAnim = false;
     }
 }

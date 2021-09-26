@@ -16,7 +16,7 @@ public class PlayerMagicBullet : MagicBullet
 
         if (collision.gameObject.layer != LayerMaskUtil.EnemyLayerNumber) return;
 
-        Enemy enemyComponent = collision.gameObject.GetComponent<Enemy>();
+        Enemy enemyComponent = collision.gameObject.GetComponentInParent<Enemy>();
 
         // Šù‚Éƒ_ƒ[ƒW‚ğ—^‚¦‚½‚à‚Ì‚È‚ç–³‹‚·‚é
         if (damagedObjectList.Contains(enemyComponent.gameObject)) return;

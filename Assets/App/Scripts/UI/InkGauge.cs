@@ -35,6 +35,14 @@ public class InkGauge : MonoBehaviour
     }
 
     /// <summary>
+    /// インクを最大にする
+    /// </summary>
+    public void AddMaxInk()
+    {
+        AddInk(maxInk);
+    }
+
+    /// <summary>
     /// インクゲージの量をインク量から設定する
     /// </summary>
     /// <param name="maxHp"></param>

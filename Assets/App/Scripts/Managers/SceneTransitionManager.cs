@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 
 public class SceneTransitionManager : MonoBehaviour
 {
-    public readonly static string GameSceneName = "BetaScene";
+    public readonly static string GameSceneName = "GameScene";
     public readonly static string TitleSceneName = "TitleScene";
     public readonly static string ClearSceneName = "ClearScene";
     public readonly static string OpeningSceneName = "OpeningScenarioScene";
@@ -41,7 +41,7 @@ public class SceneTransitionManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 特定の名前のシーンに遷移させる (UnScale)
+    /// 特定の名前のシーンに遷移させる (Scaled)
     /// </summary>
     /// <param name="sceneName"></param>
     /// <param name="loadWaitingTime"></param>
@@ -54,7 +54,7 @@ public class SceneTransitionManager : MonoBehaviour
     /// シーンリセットを行うために遷移させる
     /// </summary>
     /// <param name="loadWaitingTime"></param>
-    public void StartTransitionForReset(float loadWaitingTime = 0.1f)
+    public void StartTransitionForReset(float loadWaitingTime = 2.0f)
     {
         StartCoroutine(TransitionForReset(loadWaitingTime));
     }
@@ -72,26 +72,39 @@ public class SceneTransitionManager : MonoBehaviour
         // 1フレーム待たないとゲームオブジェクトを取得できない
         yield return null;
 
-        FadeController fadeController = GameObject.FindWithTag(FadeControllerTagName).GetComponent<FadeController>();
+        GameObject fadeControllerObject = null;
+        // 遷移用シーンが複数ある場合を考慮してタグのついたもの全てを取得する
+        foreach(GameObject fadeObject in GameObject.FindGameObjectsWithTag(FadeControllerTagName))
+        {
+            if (fadeObject.scene != transitionScene) continue;
+
+            fadeControllerObject = fadeObject;
+            break;
+        }
+
+        FadeController fadeController = fadeControllerObject.GetComponent<FadeController>();
 
         // フェードアウトさせる
         yield return StartCoroutine(fadeController.Out(null, unScaledTime));
-
+        // 前のシーンをアンロードする
+        yield return SceneManager.UnloadSceneAsync(currentScene);
+        // プログレスバーを表示させる
+        fadeController.ProgressBarObj.SetActive(true);
         // シーンをロードする
         AsyncOperation loadAsync = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
         while(!loadAsync.isDone)
         {
+            fadeController.ProgressBarImage.fillAmount = loadAsync.progress;
             yield return null;
         }
 
         Scene loadScene = SceneManager.GetSceneByName(sceneName);
         SceneManager.SetActiveScene(loadScene);
+        // プログレスバーを消す
+        fadeController.ProgressBarObj.SetActive(false);
 
         // 読み込んでから少し間を開ける
         yield return new WaitForSecondsRealtime(loadWaitingTime);
-
-        // 前のシーンをアンロードする
-        yield return SceneManager.UnloadSceneAsync(currentScene);
 
         // フェードインさせる
         yield return StartCoroutine(fadeController.In(null, unScaledTime));
@@ -118,18 +131,24 @@ public class SceneTransitionManager : MonoBehaviour
 
         // フェードアウトさせる
         yield return StartCoroutine(fadeController.Out(null, unScaledTime));
-
+        // プログレスバーを表示させる
+        fadeController.ProgressBarObj.SetActive(true);
         // 前のシーンをアンロードする
         yield return SceneManager.UnloadSceneAsync(currentScene);
+
+        yield return null;
         // シーンをロードする
         AsyncOperation loadAsync = SceneManager.LoadSceneAsync(resetSceneName, LoadSceneMode.Additive);
         while (!loadAsync.isDone)
         {
+            fadeController.ProgressBarImage.fillAmount = loadAsync.progress;
             yield return null;
         }
 
         Scene loadScene = SceneManager.GetSceneByName(resetSceneName);
         SceneManager.SetActiveScene(loadScene);
+        // プログレスバーを消す
+        fadeController.ProgressBarObj.SetActive(false);
 
         // 読み込んでから少し間を開ける
         yield return new WaitForSecondsRealtime(loadWaitingTime);

@@ -10,6 +10,10 @@ public class EnemyTank : AgentEnemy
     private float defaultWalkAnimSpeed = 1.0f;
     [SerializeField]
     private float chaseWalkAnimSpeed = 2.0f;
+    [SerializeField]
+    private int meleeAttack1Power = 20;
+    [SerializeField]
+    private int meleeAttack2Power = 25;
 
     protected string meleeAttack2AnimName = "Attack_2";
 
@@ -17,6 +21,11 @@ public class EnemyTank : AgentEnemy
     {
         base.Update();
         UpdateMoveAnim();
+    }
+
+    public override void TakeDamage(int attackPower)
+    {
+        base.TakeDamage(attackPower);
     }
 
     /// <summary>
@@ -46,15 +55,9 @@ public class EnemyTank : AgentEnemy
     {
         base.ActionForDetected();
 
-        if (!isRangeAttacking)
+        if (!isPlayingUnableToMoveAnim)
         {
-            // 遠距離攻撃中でない場合はプレイヤーを追う
             agent.SetDestination(detectPlayer.transform.position);
-        }
-        else
-        {
-            // 遠距離攻撃中は追従は止めるため、目標点を自分の座標にする
-            agent.SetDestination(transform.position);
         }
 
         float playerDistance = Vector3.Distance(transform.position, detectPlayer.transform.position);
@@ -85,14 +88,59 @@ public class EnemyTank : AgentEnemy
     /// </summary>
     protected override void NormalAttack()
     {
-        switch (Random.Range(0, 2))
+        switch (Random.Range(0, (int)MeleeAttackType.AttackCount))
         {
-            case 1:
+            case (int)MeleeAttackType.Attack1:
                 AttackToForward(meleeAttackAnimName);
                 break;
-            case 2:
+            case (int)MeleeAttackType.Attack2:
                 AttackToForward(meleeAttack2AnimName);
                 break;
         }
+    }
+
+    /// <summary>
+    /// ひるませる
+    /// </summary>
+    /// <returns></returns>
+    public override bool SetFlinch()
+    {
+        if (!base.SetFlinch()) return false;
+
+        OnAttackColliderDisable();
+        OnAttack2ColliderDisable();
+        currentFlinchTime = flinchTime;
+
+        return true;
+    }
+
+    /// <summary>
+    /// AnimationEventから受け取ったタイミングで攻撃判定を有効にする
+    /// </summary>
+    private void OnAttack2ColliderEneble()
+    {
+        if (IsFlinching()) return;
+
+        meleeAttack2Collider.EnableCollider();
+    }
+
+    /// <summary>
+    /// AnimationEventから受け取ったタイミングで攻撃判定を無効にする
+    /// </summary>
+    private void OnAttack2ColliderDisable()
+    {
+        meleeAttack2Collider.DisableCollider();
+    }
+
+    private void OnFootsteps()
+    {
+        AudioManager.Instance.PlayRandomPitchSE("Huge monster footsteps 1", transform.position);
+    }
+
+    private enum MeleeAttackType
+    {
+        Attack1,
+        Attack2,
+        AttackCount
     }
 }

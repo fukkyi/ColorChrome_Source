@@ -9,6 +9,8 @@ public class GameSceneManager : BaseSceneManager<GameSceneManager>
     private PauseUI pauseUI = null;
     [SerializeField]
     private GameOverUI gameOverUI = null;
+    [SerializeField]
+    private TerrainMeshController terrainMeshController = null;
 
     [SerializeField]
     private ColorLevelProportionTable redLevelTable = null;
@@ -61,13 +63,11 @@ public class GameSceneManager : BaseSceneManager<GameSceneManager>
     private float pauseTimeScale = 0;
 
     private bool isPausing = false;
-    private int enemyKillCount = 0;
     private float beforePauseTimeScale = 0;
 
     private void Start()
     {
         AudioManager.Instance.PlayBGMWithCrossFade("Plains_amenohinoneon", startBGMFadeInTime);
-        TalkCanvasManager.Instance.ShowPrologueScenario();
     }
 
     public void OnDestroy()
@@ -106,6 +106,9 @@ public class GameSceneManager : BaseSceneManager<GameSceneManager>
     /// </summary>
     public void TogglePause()
     {
+        if (pauseUI.isShowingOption) return;
+        if (TalkCanvasManager.Instance.isEnableScenario) return;
+
         if (isPausing)
         {
             Time.timeScale = beforePauseTimeScale;
@@ -135,6 +138,7 @@ public class GameSceneManager : BaseSceneManager<GameSceneManager>
     /// </summary>
     public void BackTitle()
     {
+        terrainMeshController.ResetGrayableDetail();
         SceneTransitionManager.Instance.StartTransitionByName(SceneTransitionManager.TitleSceneName);
     }
 
@@ -151,8 +155,13 @@ public class GameSceneManager : BaseSceneManager<GameSceneManager>
         gameOverUI.Show();
     }
 
-    public void AddEnemyKillCount(int count)
+    /// <summary>
+    /// クリアシーンに遷移する
+    /// </summary>
+    public void TransitionClearScene()
     {
-        enemyKillCount += count;
+        terrainMeshController.ResetGrayableDetail();
+        SceneTransitionManager.Instance.StartTransitionByName(SceneTransitionManager.ClearSceneName);
+        AudioManager.Instance.StopCurrentBGMWithFade();
     }
 }
